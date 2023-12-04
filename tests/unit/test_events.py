@@ -117,7 +117,6 @@ sample_values = [
     types.MainReportVersion(version=""),
     types.MainReportArgs(args={}),
     types.MainTrackingUserState(user_state=""),
-    types.MergedFromState(num_merged=0, sample=[]),
     types.MissingProfileTarget(profile_name="", target_name=""),
     types.InvalidOptionYAML(option_name="vars"),
     types.LogDbtProjectError(),

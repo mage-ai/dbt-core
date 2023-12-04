@@ -12,7 +12,6 @@ import dbt.tracking
 import dbt.utils
 from dbt.adapters.base import BaseRelation
 from dbt.adapters.factory import get_adapter
-from dbt.contracts.graph.manifest import WritableManifest
 from dbt.contracts.graph.nodes import ResultNode
 from dbt.contracts.results import (
     NodeStatus,
@@ -76,20 +75,12 @@ class GraphRunnableTask(ConfiguredTask):
         self.node_results: List[BaseResult] = []
         self.num_nodes: int = 0
         self.previous_state: Optional[PreviousState] = None
-        self.previous_defer_state: Optional[PreviousState] = None
         self.run_count: int = 0
         self.started_at: float = 0
 
         if self.args.state:
             self.previous_state = PreviousState(
                 state_path=self.args.state,
-                target_path=Path(self.config.target_path),
-                project_root=Path(self.config.project_root),
-            )
-
-        if self.args.defer_state:
-            self.previous_defer_state = PreviousState(
-                state_path=self.args.defer_state,
                 target_path=Path(self.config.target_path),
                 project_root=Path(self.config.project_root),
             )
@@ -129,23 +120,6 @@ class GraphRunnableTask(ConfiguredTask):
     @abstractmethod
     def get_node_selector(self) -> NodeSelector:
         raise NotImplementedError(f"get_node_selector not implemented for task {type(self)}")
-
-    def defer_to_manifest(self, adapter, selected_uids: AbstractSet[str]):
-        deferred_manifest = self._get_deferred_manifest()
-        if deferred_manifest is None:
-            return
-        if self.manifest is None:
-            raise DbtInternalError(
-                "Expected to defer to manifest, but there is no runtime manifest to defer from!"
-            )
-        self.manifest.merge_from_artifact(
-            adapter=adapter,
-            other=deferred_manifest,
-            selected=selected_uids,
-            favor_state=bool(self.args.favor_state),
-        )
-        # TODO: is it wrong to write the manifest here? I think it's right...
-        write_manifest(self.manifest, self.config.project_target_path)
 
     def get_graph_queue(self) -> GraphQueue:
         selector = self.get_node_selector()
@@ -432,7 +406,6 @@ class GraphRunnableTask(ConfiguredTask):
     def before_run(self, adapter, selected_uids: AbstractSet[str]):
         with adapter.connection_named("master"):
             self.populate_adapter_cache(adapter)
-            self.defer_to_manifest(adapter, selected_uids)
 
     def after_run(self, adapter, results):
         pass
@@ -616,17 +589,3 @@ class GraphRunnableTask(ConfiguredTask):
 
     def task_end_messages(self, results):
         print_run_end_messages(results)
-
-    def _get_previous_state(self) -> Optional[WritableManifest]:
-        state = self.previous_defer_state or self.previous_state
-        if not state:
-            raise DbtRuntimeError(
-                "--state or --defer-state are required for deferral, but neither was provided"
-            )
-
-        if not state.manifest:
-            raise DbtRuntimeError(f'Could not find manifest in --state path: "{state}"')
-        return state.manifest
-
-    def _get_deferred_manifest(self) -> Optional[WritableManifest]:
-        return self._get_previous_state() if self.args.defer else None

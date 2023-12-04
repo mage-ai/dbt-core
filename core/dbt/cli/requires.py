@@ -9,6 +9,7 @@ from dbt.cli.exceptions import (
 from dbt.cli.flags import Flags
 from dbt.config import RuntimeConfig
 from dbt.config.runtime import load_project, load_profile, UnsetProfile
+from dbt.contracts.state import PreviousState
 from dbt.events.base_types import EventLevel
 from dbt.events.functions import fire_event, LOG_VERSION, set_invocation_id, setup_event_logger
 from dbt.events.types import (
@@ -20,7 +21,12 @@ from dbt.events.types import (
 )
 from dbt.events.helpers import get_json_string_utcnow
 from dbt.events.types import MainEncounteredError, MainStackTrace
-from dbt.exceptions import Exception as DbtException, DbtProjectError, FailFastError
+from dbt.exceptions import (
+    Exception as DbtException,
+    DbtProjectError,
+    DbtRuntimeError,
+    FailFastError,
+)
 from dbt.parser.manifest import ManifestLoader, write_manifest
 from dbt.profiler import profiler
 from dbt.tracking import active_user, initialize_from_flags, track_run
@@ -30,6 +36,7 @@ from dbt.plugins import set_up_plugin_manager, get_plugin_manager
 from click import Context
 from functools import update_wrapper
 import importlib.util
+from pathlib import Path
 import time
 import traceback
 
@@ -265,6 +272,7 @@ def manifest(*args0, write=True, write_perf_info=False):
 
             runtime_config = ctx.obj["runtime_config"]
             register_adapter(runtime_config)
+            flags: Flags = ctx.obj["flags"]
 
             # a manifest has already been set on the context, so don't overwrite it
             if ctx.obj.get("manifest") is None:
@@ -273,8 +281,26 @@ def manifest(*args0, write=True, write_perf_info=False):
                     write_perf_info=write_perf_info,
                 )
 
+                # If deferral is enabled, add 'defer_relation' attribute to all nodes
+                if flags.defer:
+                    defer_state = flags.defer_state or flags.state
+                    if not defer_state:
+                        raise DbtRuntimeError(
+                            "Deferral is enabled and requires a stateful manifest, but none was provided"
+                        )
+                    previous_state = PreviousState(
+                        state_path=defer_state,
+                        target_path=Path(runtime_config.target_path),
+                        project_root=Path(runtime_config.project_root),
+                    )
+                    if not previous_state.manifest:
+                        raise DbtRuntimeError(
+                            f'Could not find manifest in deferral state path: "{defer_state}"'
+                        )
+                    manifest.merge_from_artifact(previous_state.manifest)
+
                 ctx.obj["manifest"] = manifest
-                if write and ctx.obj["flags"].write_json:
+                if write and flags.write_json:
                     write_manifest(manifest, runtime_config.project_target_path)
                     pm = get_plugin_manager(runtime_config.project_name)
                     plugin_artifacts = pm.get_manifest_artifacts(manifest)
