@@ -11,8 +11,8 @@ from click.core import Command as ClickCommand, Group, ParameterSource
 from dbt.cli.exceptions import DbtUsageException
 from dbt.cli.resolvers import default_log_path, default_project_dir
 from dbt.cli.types import Command as CliCommand
-from dbt.config.profile import read_user_config
-from dbt.contracts.project import UserConfig
+from dbt.config.profile import read_project_flags
+from dbt.contracts.project import ProjectFlags
 from dbt.exceptions import DbtInternalError
 from dbt.deprecations import renamed_env_var
 from dbt.helper_types import WarnErrorOptions
@@ -24,7 +24,7 @@ if os.name != "nt":
 FLAGS_DEFAULTS = {
     "INDIRECT_SELECTION": "eager",
     "TARGET_PATH": None,
-    # Cli args without user_config or env var option.
+    # Cli args without project_flags or env var option.
     "FULL_REFRESH": False,
     "STRICT_MODE": False,
     "STORE_FAILURES": False,
@@ -76,7 +76,7 @@ class Flags:
     """Primary configuration artifact for running dbt"""
 
     def __init__(
-        self, ctx: Optional[Context] = None, user_config: Optional[UserConfig] = None
+        self, ctx: Optional[Context] = None, project_flags: Optional[ProjectFlags] = None
     ) -> None:
 
         # Set the default flags.
@@ -201,23 +201,25 @@ class Flags:
                 invoked_subcommand_ctx, params_assigned_from_default, deprecated_env_vars
             )
 
-        if not user_config:
+        if not project_flags:
             profiles_dir = getattr(self, "PROFILES_DIR", None)
-            user_config = read_user_config(profiles_dir) if profiles_dir else None
+            project_flags = read_project_flags(profiles_dir) if profiles_dir else None
 
         # Add entire invocation command to flags
         object.__setattr__(self, "INVOCATION_COMMAND", "dbt " + " ".join(sys.argv[1:]))
 
         # Overwrite default assignments with user config if available.
-        if user_config:
+        if project_flags:
             param_assigned_from_default_copy = params_assigned_from_default.copy()
             for param_assigned_from_default in params_assigned_from_default:
-                user_config_param_value = getattr(user_config, param_assigned_from_default, None)
-                if user_config_param_value is not None:
+                project_flags_param_value = getattr(
+                    project_flags, param_assigned_from_default, None
+                )
+                if project_flags_param_value is not None:
                     object.__setattr__(
                         self,
                         param_assigned_from_default.upper(),
-                        convert_config(param_assigned_from_default, user_config_param_value),
+                        convert_config(param_assigned_from_default, project_flags_param_value),
                     )
                     param_assigned_from_default_copy.remove(param_assigned_from_default)
             params_assigned_from_default = param_assigned_from_default_copy

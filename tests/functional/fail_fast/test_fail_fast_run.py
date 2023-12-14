@@ -52,7 +52,7 @@ class TestFailFastFromConfig(FailFastBase):
             }
         }
 
-    def test_fail_fast_run_user_config(
+    def test_fail_fast_run_project_flags(
         self,
         project,
         models,  # noqa: F811
