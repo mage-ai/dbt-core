@@ -47,11 +47,17 @@ def set_from_args(args: Namespace, project_flags):
     # we set attributes of args after initialize the flags, but project_flags
     # is being read in the Flags constructor, so we need to read it here and pass in
     # to make sure we use the correct project_flags
-    if (hasattr(args, "PROFILES_DIR") or hasattr(args, "profiles_dir")) and not project_flags:
-        from dbt.config.profile import read_project_flags
+    profiles_dir = getattr(args, "PROFILES_DIR", None) or getattr(args, "profiles_dir", None)
+    if not profiles_dir:
+        print("***  No profiles_dir in set_from_args")
+    project_dir = getattr(args, "PROJECT_DIR", None) or getattr(args, "project_dir", None)
+    if not project_dir:
+        print("***  No project_dir in set_from_args")
 
-        profiles_dir = getattr(args, "PROFILES_DIR", None) or getattr(args, "profiles_dir")
-        project_flags = read_project_flags(profiles_dir)
+    if profiles_dir and project_dir:
+        from dbt.config.project import read_project_flags
+
+        project_flags = read_project_flags(project_dir, profiles_dir)
 
     # make a dummy context to get the flags, totally arbitrary
     ctx = cli.make_context("run", ["run"])

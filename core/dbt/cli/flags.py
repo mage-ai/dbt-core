@@ -3,6 +3,7 @@ import sys
 from dataclasses import dataclass
 from importlib import import_module
 from multiprocessing import get_context
+from pathlib import Path
 from pprint import pformat as pf
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
@@ -11,7 +12,7 @@ from click.core import Command as ClickCommand, Group, ParameterSource
 from dbt.cli.exceptions import DbtUsageException
 from dbt.cli.resolvers import default_log_path, default_project_dir
 from dbt.cli.types import Command as CliCommand
-from dbt.config.profile import read_project_flags
+from dbt.config.project import read_project_flags
 from dbt.contracts.project import ProjectFlags
 from dbt.exceptions import DbtInternalError
 from dbt.deprecations import renamed_env_var
@@ -202,8 +203,17 @@ class Flags:
             )
 
         if not project_flags:
-            profiles_dir = getattr(self, "PROFILES_DIR", None)
-            project_flags = read_project_flags(profiles_dir) if profiles_dir else None
+            project_dir = str(getattr(self, "PROJECT_DIR", str(default_project_dir())))
+            if not project_dir:
+                print("*** project_dir not available in Flags.__init__")
+            profiles_dir = str(getattr(self, "PROFILES_DIR", None))
+            if not profiles_dir:
+                print("*** profiles_dir not available in Flags.__init__")
+            if profiles_dir and project_dir:
+                project_flags = read_project_flags(project_dir, profiles_dir)
+            else:
+                print("***  project_dir and profiles_dir do not both exist in Flags.__init__")
+                project_flags = None
 
         # Add entire invocation command to flags
         object.__setattr__(self, "INVOCATION_COMMAND", "dbt " + " ".join(sys.argv[1:]))
@@ -237,9 +247,11 @@ class Flags:
         # Starting in v1.5, if `log-path` is set in `dbt_project.yml`, it will raise a deprecation warning,
         # with the possibility of removing it in a future release.
         if getattr(self, "LOG_PATH", None) is None:
-            project_dir = getattr(self, "PROJECT_DIR", default_project_dir())
+            project_dir = getattr(self, "PROJECT_DIR", str(default_project_dir()))
             version_check = getattr(self, "VERSION_CHECK", True)
-            object.__setattr__(self, "LOG_PATH", default_log_path(project_dir, version_check))
+            object.__setattr__(
+                self, "LOG_PATH", default_log_path(Path(project_dir), version_check)
+            )
 
         # Support console DO NOT TRACK initiative.
         if os.getenv("DO_NOT_TRACK", "").lower() in ("1", "t", "true", "y", "yes"):

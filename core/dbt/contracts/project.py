@@ -310,7 +310,6 @@ class ProjectFlags(ExtensibleDbtClassMixin, Replaceable):
 class ProfileConfig(dbtClassMixin, Replaceable):
     profile_name: str
     target_name: str
-    project_flags: ProjectFlags
     threads: int
     # TODO: make this a dynamic union of some kind?
     credentials: Optional[Dict[str, Any]]

@@ -35,12 +35,13 @@ from dbt.graph import SelectionSpec
 from dbt.helper_types import NoValue
 from dbt.semver import VersionSpecifier, versions_compatible
 from dbt.version import get_installed_version
-from dbt.utils import MultiDict, md5
+from dbt.utils import MultiDict, md5, coerce_dict_str
 from dbt.node_types import NodeType
 from dbt.config.selectors import SelectorDict
 from dbt.contracts.project import (
     Project as ProjectContract,
     SemverString,
+    ProjectFlags,
 )
 from dbt.contracts.project import PackageConfig, ProjectPackageMetadata
 from dbt.dataclass_schema import ValidationError
@@ -323,7 +324,7 @@ class PartialProject(RenderComponents):
             selectors_dict=rendered_selectors,
         )
 
-    # Called by Project.from_project_root (not PartialProject.from_project_root!)
+    # Called by Project.from_project_root which first calls PartialProject.from_project_root
     def render(self, renderer: DbtProjectYamlRenderer) -> "Project":
         try:
             rendered = self.get_rendered(renderer)
@@ -420,11 +421,11 @@ class PartialProject(RenderComponents):
 
         docs_paths: List[str] = value_or(cfg.docs_paths, all_source_paths)
         asset_paths: List[str] = value_or(cfg.asset_paths, [])
-        flags = get_flags()
+        global_flags = get_flags()
 
-        flag_target_path = str(flags.TARGET_PATH) if flags.TARGET_PATH else None
+        flag_target_path = str(global_flags.TARGET_PATH) if global_flags.TARGET_PATH else None
         target_path: str = flag_or(flag_target_path, cfg.target_path, "target")
-        log_path: str = str(flags.LOG_PATH)
+        log_path: str = str(global_flags.LOG_PATH)
 
         clean_targets: List[str] = value_or(cfg.clean_targets, [target_path])
         packages_install_path: str = value_or(cfg.packages_install_path, "dbt_packages")
@@ -568,6 +569,11 @@ class PartialProject(RenderComponents):
             packages_specified_path,
         ) = package_and_project_data_from_root(project_root)
         selectors_dict = selector_data_from_root(project_root)
+
+        if "flags" in project_dict:
+            # We don't want to include "flags" in the Project,
+            # it goes in ProjectFlags
+            project_dict.pop("flags")
 
         return cls.from_dicts(
             project_root=project_root,
@@ -773,3 +779,35 @@ class Project:
     def project_target_path(self):
         # If target_path is absolute, project_root will not be included
         return os.path.join(self.project_root, self.target_path)
+
+
+def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
+    try:
+        project_flags: Dict[str, Any] = {}
+        # Read project_flags from dbt_project.yml first
+        project_root = os.path.normpath(project_dir)
+        project_dict = load_raw_project(project_root)
+        if "flags" in project_dict:
+            project_flags == project_dict.pop("flags")
+
+        from dbt.config.profile import read_profile
+
+        profile = read_profile(profiles_dir)
+        if profile:
+            profile_project_flags = coerce_dict_str(profile.get("config", {}))
+
+        if project_flags and profile_project_flags:
+            raise ValidationError(
+                "Do not specify both 'config' in profiles.yml and 'flags' in dbt_project.yml"
+            )
+
+        if profile_project_flags:
+            # Raise deprecation warning
+            project_flags = profile_project_flags
+
+        if project_flags is not None:
+            ProjectFlags.validate(project_flags)
+            return ProjectFlags.from_dict(project_flags)
+    except (DbtRuntimeError, ValidationError):
+        pass
+    return ProjectFlags()

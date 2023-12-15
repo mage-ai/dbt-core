@@ -262,8 +262,6 @@ class TestProfile(BaseConfigTest):
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "postgres")
         self.assertEqual(profile.threads, 7)
-        self.assertTrue(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
         self.assertTrue(isinstance(profile.credentials, PostgresCredentials))
         self.assertEqual(profile.credentials.type, "postgres")
         self.assertEqual(profile.credentials.host, "postgres-db-hostname")
@@ -281,8 +279,6 @@ class TestProfile(BaseConfigTest):
         profile = self.from_raw_profiles()
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "postgres")
-        self.assertFalse(profile.project_flags.send_anonymous_usage_stats)
-        self.assertFalse(profile.project_flags.use_colors)
 
     def test_partial_config_override(self):
         self.default_profile_data["config"] = {
@@ -292,9 +288,6 @@ class TestProfile(BaseConfigTest):
         profile = self.from_raw_profiles()
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "postgres")
-        self.assertFalse(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
-        self.assertEqual(profile.project_flags.printer_width, 60)
 
     def test_missing_type(self):
         del self.default_profile_data["default"]["outputs"]["postgres"]["type"]
@@ -438,8 +431,6 @@ class TestProfileFile(BaseFileTest):
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "postgres")
         self.assertEqual(profile.threads, 7)
-        self.assertTrue(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
         self.assertTrue(isinstance(profile.credentials, PostgresCredentials))
         self.assertEqual(profile.credentials.type, "postgres")
         self.assertEqual(profile.credentials.host, "postgres-db-hostname")
@@ -464,8 +455,6 @@ class TestProfileFile(BaseFileTest):
         self.assertEqual(profile.profile_name, "other")
         self.assertEqual(profile.target_name, "other-postgres")
         self.assertEqual(profile.threads, 3)
-        self.assertTrue(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
         self.assertTrue(isinstance(profile.credentials, PostgresCredentials))
         self.assertEqual(profile.credentials.type, "postgres")
         self.assertEqual(profile.credentials.host, "other-postgres-db-hostname")
@@ -485,8 +474,6 @@ class TestProfileFile(BaseFileTest):
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "with-vars")
         self.assertEqual(profile.threads, 1)
-        self.assertTrue(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
         self.assertEqual(profile.credentials.type, "postgres")
         self.assertEqual(profile.credentials.host, "env-postgres-host")
         self.assertEqual(profile.credentials.port, 6543)
@@ -505,8 +492,6 @@ class TestProfileFile(BaseFileTest):
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "with-vars")
         self.assertEqual(profile.threads, 1)
-        self.assertTrue(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
         self.assertEqual(profile.credentials.type, "postgres")
         self.assertEqual(profile.credentials.host, "env-postgres-host")
         self.assertEqual(profile.credentials.port, 6543)
@@ -537,8 +522,6 @@ class TestProfileFile(BaseFileTest):
         self.assertEqual(profile.profile_name, "default")
         self.assertEqual(profile.target_name, "cli-and-env-vars")
         self.assertEqual(profile.threads, 1)
-        self.assertTrue(profile.project_flags.send_anonymous_usage_stats)
-        self.assertIsNone(profile.project_flags.use_colors)
         self.assertEqual(profile.credentials.type, "postgres")
         self.assertEqual(profile.credentials.host, "cli-postgres-host")
         self.assertEqual(profile.credentials.port, 6543)
@@ -1078,14 +1061,6 @@ class TestRuntimeConfig(BaseConfigTest):
 
         # to make sure nothing terrible happens
         str(config)
-
-    def test_validate_fails(self):
-        project = self.get_project()
-        profile = self.get_profile()
-        # invalid - must be boolean
-        profile.project_flags.use_colors = 100
-        with self.assertRaises(dbt.exceptions.DbtProjectError):
-            dbt.config.RuntimeConfig.from_parts(project, profile, {})
 
     def test_supported_version(self):
         self.default_project_data["require-dbt-version"] = ">0.0.0"

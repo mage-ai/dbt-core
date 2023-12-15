@@ -178,17 +178,9 @@ class Credentials(ExtensibleDbtClassMixin, Replaceable, metaclass=abc.ABCMeta):
         return dct
 
 
-class ProjectFlagContract(Protocol):
-    send_anonymous_usage_stats: bool
-    use_colors: Optional[bool] = None
-    partial_parse: Optional[bool] = None
-    printer_width: Optional[int] = None
-
-
 class HasCredentials(Protocol):
     credentials: Credentials
     profile_name: str
-    project_flags: ProjectFlagContract
     target_name: str
     threads: int
 
