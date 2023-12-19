@@ -96,6 +96,11 @@ class CollectFreshnessReturnSignature(DBTDeprecation):
     _event = "CollectFreshnessReturnSignature"
 
 
+class ProjectFlagsMovedDeprecation(DBTDeprecation):
+    _name = "project-flags-moved"
+    _event = "ProjectFlagsMovedDeprecation"
+
+
 def renamed_env_var(old_name: str, new_name: str):
     class EnvironmentVariableRenamed(DBTDeprecation):
         _name = f"environment-variable-renamed:{old_name}"

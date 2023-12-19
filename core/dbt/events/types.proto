@@ -415,6 +415,15 @@ message CollectFreshnessReturnSignatureMsg {
     CollectFreshnessReturnSignature data = 2;
 }
 
+// D013
+message ProjectFlagsMovedDeprecation {
+}
+
+message ProjectFlagsMovedDeprecationMsg {
+    EventInfo info = 1;
+    ProjectFlagsMovedDeprecation data = 2;
+}
+
 // E - DB Adapter
 
 // E001
