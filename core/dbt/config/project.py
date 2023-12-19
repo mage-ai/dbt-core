@@ -715,7 +715,6 @@ class Project:
                 "exposures": self.exposures,
                 "vars": self.vars.to_dict(),
                 "require-dbt-version": [v.to_version_string() for v in self.dbt_version],
-                "config-version": self.config_version,
                 "restrict-access": self.restrict_access,
                 "dbt-cloud": self.dbt_cloud,
             }
