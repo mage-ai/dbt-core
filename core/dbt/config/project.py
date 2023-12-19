@@ -793,6 +793,7 @@ def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
         from dbt.config.profile import read_profile
 
         profile = read_profile(profiles_dir)
+        profile_project_flags: Optional[Dict[str, Any]] = {}
         if profile:
             profile_project_flags = coerce_dict_str(profile.get("config", {}))
 
