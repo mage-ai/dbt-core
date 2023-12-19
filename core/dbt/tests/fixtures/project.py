@@ -181,6 +181,7 @@ def dbt_project_yml(project_root, project_config_update):
     project_config = {
         "name": "test",
         "profile": "test",
+        "flags": {"send_anonymous_usage_stats": False},
     }
     if project_config_update:
         if isinstance(project_config_update, dict):
