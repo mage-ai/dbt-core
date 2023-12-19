@@ -203,16 +203,11 @@ class Flags:
             )
 
         if not project_flags:
-            project_dir = str(getattr(self, "PROJECT_DIR", str(default_project_dir())))
-            if not project_dir:
-                print("*** project_dir not available in Flags.__init__")
-            profiles_dir = str(getattr(self, "PROFILES_DIR", None))
-            if not profiles_dir:
-                print("*** profiles_dir not available in Flags.__init__")
+            project_dir = getattr(self, "PROJECT_DIR", str(default_project_dir()))
+            profiles_dir = getattr(self, "PROFILES_DIR", None)
             if profiles_dir and project_dir:
                 project_flags = read_project_flags(project_dir, profiles_dir)
             else:
-                print("***  project_dir and profiles_dir do not both exist in Flags.__init__")
                 project_flags = None
 
         # Add entire invocation command to flags
