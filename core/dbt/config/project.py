@@ -785,10 +785,15 @@ def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
     try:
         project_flags: Dict[str, Any] = {}
         # Read project_flags from dbt_project.yml first
+        # Flags are instantiated before the project, so we don't
+        # want to throw an error for non-existence of dbt_project.yml here
+        # because it breaks things.
         project_root = os.path.normpath(project_dir)
-        project_dict = load_raw_project(project_root)
-        if "flags" in project_dict:
-            project_flags = project_dict.pop("flags")
+        project_yaml_filepath = os.path.join(project_root, "dbt_project.yml")
+        if path_exists(project_yaml_filepath):
+            project_dict = load_raw_project(project_root)
+            if "flags" in project_dict:
+                project_flags = project_dict.pop("flags")
 
         from dbt.config.profile import read_profile
 
