@@ -788,7 +788,7 @@ def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
         project_root = os.path.normpath(project_dir)
         project_dict = load_raw_project(project_root)
         if "flags" in project_dict:
-            project_flags == project_dict.pop("flags")
+            project_flags = project_dict.pop("flags")
 
         from dbt.config.profile import read_profile
 
@@ -812,6 +812,9 @@ def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
         if project_flags is not None:
             ProjectFlags.validate(project_flags)
             return ProjectFlags.from_dict(project_flags)
+    except (DbtProjectError) as exc:
+        # We don't want to eat the DbtProjectError for UserConfig to ProjectFlags
+        raise exc
     except (DbtRuntimeError, ValidationError):
         pass
     return ProjectFlags()
