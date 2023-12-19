@@ -100,6 +100,15 @@ class ProjectFlagsMovedDeprecation(DBTDeprecation):
     _name = "project-flags-moved"
     _event = "ProjectFlagsMovedDeprecation"
 
+    def show(self, *args, **kwargs) -> None:
+        if self.name not in active_deprecations:
+            event = self.event(**kwargs)
+            # We can't do warn_or_error because the ProjectFlags
+            # is where that is set up and we're just reading it.
+            dbt.events.functions.fire_event(event)
+            self.track_deprecation_warn()
+            active_deprecations.add(self.name)
+
 
 def renamed_env_var(old_name: str, new_name: str):
     class EnvironmentVariableRenamed(DBTDeprecation):
