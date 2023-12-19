@@ -139,6 +139,7 @@ deprecations_list: List[DBTDeprecation] = [
     ConfigLogPathDeprecation(),
     ConfigTargetPathDeprecation(),
     CollectFreshnessReturnSignature(),
+    ProjectFlagsMovedDeprecation(),
 ]
 
 deprecations: Dict[str, DBTDeprecation] = {d.name: d for d in deprecations_list}

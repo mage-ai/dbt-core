@@ -145,6 +145,7 @@ sample_values = [
     types.ConfigLogPathDeprecation(deprecated_path=""),
     types.ConfigTargetPathDeprecation(deprecated_path=""),
     types.CollectFreshnessReturnSignature(),
+    types.ProjectFlagsMovedDeprecation(),
     # E - DB Adapter ======================
     types.AdapterEventDebug(),
     types.AdapterEventInfo(),

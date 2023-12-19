@@ -798,12 +798,13 @@ def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
             profile_project_flags = coerce_dict_str(profile.get("config", {}))
 
         if project_flags and profile_project_flags:
-            raise ValidationError(
-                "Do not specify both 'config' in profiles.yml and 'flags' in dbt_project.yml"
+            raise DbtProjectError(
+                "Do not specify both 'config' in profiles.yml and 'flags' in dbt_project.yml. "
+                "Using 'config' in profiles.yml is deprecated."
             )
 
         if profile_project_flags:
-            # Raise deprecation warning
+            deprecations.warn("project-flags-moved")
             project_flags = profile_project_flags
 
         if project_flags is not None:
