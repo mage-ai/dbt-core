@@ -206,7 +206,12 @@ class Flags:
             project_dir = getattr(self, "PROJECT_DIR", str(default_project_dir()))
             profiles_dir = getattr(self, "PROFILES_DIR", None)
             if profiles_dir and project_dir:
-                project_flags = read_project_flags(project_dir, profiles_dir)
+                try:
+                    project_flags = read_project_flags(project_dir, profiles_dir)
+                except Exception:
+                    # This is probably a yaml load failure; the error will be reported
+                    # when the project is loaded later.
+                    project_flags = None
             else:
                 project_flags = None
 
