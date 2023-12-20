@@ -790,9 +790,14 @@ def read_project_flags(project_dir: str, profiles_dir: str) -> ProjectFlags:
         project_root = os.path.normpath(project_dir)
         project_yaml_filepath = os.path.join(project_root, "dbt_project.yml")
         if path_exists(project_yaml_filepath):
-            project_dict = load_raw_project(project_root)
-            if "flags" in project_dict:
-                project_flags = project_dict.pop("flags")
+            try:
+                project_dict = load_raw_project(project_root)
+                if "flags" in project_dict:
+                    project_flags = project_dict.pop("flags")
+            except Exception:
+                # This is probably a yaml load error.The error will be reported
+                # later, when the project loads.
+                pass
 
         from dbt.config.profile import read_profile
 
