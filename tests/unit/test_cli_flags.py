@@ -411,3 +411,38 @@ class TestFlags:
         args_dict = {"log_file_max_bytes": 0}
         flags = Flags.from_dict(Command.RUN, args_dict)
         assert flags.LOG_FILE_MAX_BYTES == 0
+
+
+def test_project_flag_defaults():
+    flags = ProjectFlags()
+    # From # 9183: Let's add a unit test that ensures that:
+    # every attribute of ProjectFlags that has a corresponding click option
+    # in params.py should be set to None by default (except for anon user
+    # tracking). Going forward, flags can have non-None defaults if they
+    # do not have a corresponding CLI option/env var. These will be used
+    # to control backwards incompatible interface or behaviour changes.
+
+    # List of all flags except send_anonymous_usage_stats
+    project_flags = [
+        "cache_selected_only",
+        "debug",
+        "fail_fast",
+        "indirect_selection",
+        "log_format",
+        "log_format_file",
+        "log_level",
+        "log_level_file",
+        "partial_parse",
+        "populate_cache",
+        "printer_width",
+        "static_parser",
+        "use_colors",
+        "use_colors_file",
+        "use_experimental_parser",
+        "version_check",
+        "warn_error",
+        "warn_error_options",
+        "write_json",
+    ]
+    for flag in project_flags:
+        assert getattr(flags, flag) is None
