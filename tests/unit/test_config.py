@@ -1327,3 +1327,30 @@ class TestVarLookups(unittest.TestCase):
         for node, key, expected_value in expected:
             value = vars_provider.vars_for(node, "postgres").get(key)
             assert value == expected_value
+
+
+class TestMultipleProjectFlags(BaseConfigTest):
+    def setUp(self):
+        super().setUp()
+
+        self.default_project_data.update(
+            {
+                "flags": {
+                    "send_anonymous_usage_data": False,
+                }
+            }
+        )
+        self.write_project(self.default_project_data)
+
+        self.default_profile_data.update(
+            {
+                "config": {
+                    "send_anonymous_usage_data": False,
+                }
+            }
+        )
+        self.write_profile(self.default_profile_data)
+
+    def test_setting_multiple_flags(self):
+        with pytest.raises(dbt.exceptions.DbtProjectError):
+            set_from_args(self.args, None)
