@@ -51,6 +51,7 @@ def set_from_args(args: Namespace, project_flags):
     project_dir = getattr(args, "PROJECT_DIR", None) or getattr(args, "project_dir", None)
     if profiles_dir and project_dir:
         from dbt.config.project import read_project_flags
+
         project_flags = read_project_flags(project_dir, profiles_dir)
 
     # make a dummy context to get the flags, totally arbitrary
